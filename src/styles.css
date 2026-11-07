@@ -21,3 +21,21 @@
 .renderer-empty b{font-size:12px;color:#c8c9d7}
 .renderer-empty span{font-size:10px}
 @media(max-width:700px){.renderer-canvas-wrap{width:min(100%,230px)}.renderer-controls{gap:6px}.renderer-play,.renderer-export{padding:9px 8px;font-size:9px}}
+
+/* Cross-platform download center */
+.downloads-page>p{max-width:720px}
+.download-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:26px}
+.download-card{padding:20px;display:flex;flex-direction:column;align-items:flex-start;min-height:230px}
+.download-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:13px;background:#25203d;color:#c2aaff;margin-bottom:15px}
+.download-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%}
+.download-card h3{font-size:16px;margin:0;color:#f0effb}
+.download-card p{font-size:12px;line-height:1.65;color:#9297ac;margin:10px 0 18px;flex:1}
+.release-status{font-size:9px;border-radius:20px;padding:5px 8px;white-space:nowrap}
+.release-status.ready{color:#8ee0ba;background:#17382f}
+.release-status.pending{color:#d6c2ff;background:#30264a}
+.download-link,.release-note a{display:inline-flex;align-items:center;gap:6px;color:#c7b4ff;font-size:11px;font-weight:700;text-decoration:none}
+.download-disabled{font-size:10px;color:#747a90;border:1px solid #34364a;border-radius:7px;padding:8px 10px}
+.release-note{margin-top:16px;padding:18px}
+.release-note b{font-size:12px}
+.release-note p{font-size:11px;color:#969bb0;line-height:1.6}
+@media(max-width:680px){.download-grid{grid-template-columns:1fr}.download-card{min-height:190px}}
