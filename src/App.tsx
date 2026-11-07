@@ -28,7 +28,7 @@ export default function App() {
     const next: Project = { id: crypto.randomUUID(), title: prompt.trim().slice(0, 48), prompt: prompt.trim(), updatedAt: new Date().toISOString(), scenes: makeStoryboard(prompt) }
     const updated = [next, ...projects]
     persist(updated); setActive(next); setSelected(0); setPage('create')
-    setNotice('Storyboard 4 adegan berhasil dibuat sebagai draft lokal.')
+    setNotice('Storyboard sinematik berhasil dibuat sebagai draft lokal.')
     setBusy(false)
   }
   function updateScene<K extends keyof Scene>(key: K, value: Scene[K]) {
@@ -107,7 +107,7 @@ export default function App() {
         <div className="panel release-note"><b>Catatan rilis</b><p>File installer akan ditautkan di halaman ini setelah benar-benar berhasil dibuat dan diuji. Kami tidak menampilkan tombol unduhan palsu.</p><a href="https://github.com/ustadzarz-arch/Video-Motion-Graphics-Generator/releases" target="_blank" rel="noreferrer">Lihat halaman GitHub Releases <ChevronRight size={14}/></a></div>
       </section>}
       
-      {page === 'settings' && <section className="simple-page"><div className="eyebrow">PREFERENCES</div><h1>Pengaturan.</h1><p>Pengaturan workspace dan status integrasi.</p><div className="panel settings-card"><div><b>Mode penyimpanan</b><span>Local browser storage</span></div><div><b>AI provider</b><span>Belum terhubung — tidak ada API key yang disimpan di aplikasi.</span></div><div><b>Video renderer</b><span>Canvas renderer tersedia untuk preview animasi dan ekspor WebM. MP4 belum tersedia.</span></div><div><b>Versi aplikasi</b><span>0.2.0 · Canvas renderer</span></div></div></section>}
+      {page === 'settings' && <section className="simple-page"><div className="eyebrow">PREFERENCES</div><h1>Pengaturan.</h1><p>Pengaturan workspace dan status integrasi.</p><div className="panel settings-card"><div><b>Mode penyimpanan</b><span>Local browser storage</span></div><div><b>AI provider</b><span>Belum terhubung — tidak ada API key yang disimpan di aplikasi.</span></div><div><b>Video renderer</b><span>Canvas renderer tersedia untuk preview animasi dan ekspor WebM. MP4 belum tersedia.</span></div><div><b>Versi aplikasi</b><span>0.3.1 · Cinematic storyboard + WebM renderer</span></div></div></section>}
       <footer className="app-footer"><span>© 2026 Motion Graphics Generator</span><span>{notice}</span></footer>
     </main>
     {mobileMenu && <button className="scrim" onClick={() => setMobileMenu(false)} aria-label="Tutup menu"/>}
