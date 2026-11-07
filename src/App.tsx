@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Clapperboard, MessageSquare, FolderOpen, Settings, Plus, Send, WandSparkles, Film, Download, Clock3, ChevronRight, Trash2, Sparkles, PanelLeftClose, Menu, Smartphone, Monitor, Apple, Terminal, Globe } from 'lucide-react'
-import { makeStoryboard, type Scene } from './lib/storyboard'
+import { Clapperboard, MessageSquare, FolderOpen, Settings, Plus, Send, WandSparkles, Film, Download, Clock3, ChevronRight, Trash2, Sparkles, PanelLeftClose, Menu, Smartphone, Monitor, Apple, Terminal, Globe, Volume2 } from 'lucide-react'
+import { makeStoryboardFromNarration, type Scene } from './lib/storyboard'
 import { loadProjects, saveProjects, type Project } from './lib/storage'
 import MotionRenderer from './components/MotionRenderer'
 
 type Page = 'chat' | 'create' | 'projects' | 'downloads' | 'settings'
-const starter = 'Buat motion graphics sinematik tentang proses terbentuknya Bumi, dari awan debu kosmik hingga planet biru.'
+const starter = 'Jauh sebelum Bumi terbentuk, tata surya kita hanyalah awan gas dan debu kosmik. Gravitasi menyatukan materi itu hingga Matahari muda mulai menyala. Di sekelilingnya, butiran debu saling bertumbukan dan membentuk batuan. Perlahan, planet muda terbentuk, mendingin, lalu memiliki lautan dan atmosfer. Dari proses panjang itu, lahirlah Bumi, rumah bagi kehidupan.'
 
 export default function App() {
   const [page, setPage] = useState<Page>('create')
@@ -16,6 +16,7 @@ export default function App() {
   const [notice, setNotice] = useState('Workspace siap digunakan')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [voiceOverPlaying, setVoiceOverPlaying] = useState(false)
 
   const scenes = active?.scenes || []
   const current = scenes[selected]
@@ -25,12 +26,34 @@ export default function App() {
   function createProject() {
     if (!prompt.trim()) { setNotice('Tulis ide video terlebih dahulu.'); return }
     setBusy(true)
-    const next: Project = { id: crypto.randomUUID(), title: prompt.trim().slice(0, 48), prompt: prompt.trim(), updatedAt: new Date().toISOString(), scenes: makeStoryboard(prompt) }
+    const next: Project = { id: crypto.randomUUID(), title: prompt.trim().slice(0, 48), prompt: prompt.trim(), updatedAt: new Date().toISOString(), scenes: makeStoryboardFromNarration(prompt) }
     const updated = [next, ...projects]
     persist(updated); setActive(next); setSelected(0); setPage('create')
     setNotice('Storyboard sinematik berhasil dibuat sebagai draft lokal.')
     setBusy(false)
   }
+  function toggleVoiceOver() {
+    if (!active?.scenes.length) { setNotice('Buat storyboard dari narasi terlebih dahulu.'); return }
+    if (!('speechSynthesis' in window)) { setNotice('Browser ini belum mendukung pemutaran voice-over.'); return }
+    if (voiceOverPlaying) {
+      window.speechSynthesis.cancel()
+      setVoiceOverPlaying(false)
+      setNotice('Voice-over dihentikan.')
+      return
+    }
+    const script = active.scenes.map(scene => scene.narration).filter(Boolean).join(' ')
+    const utterance = new SpeechSynthesisUtterance(script)
+    utterance.lang = 'id-ID'
+    utterance.rate = 1
+    utterance.pitch = 1
+    utterance.onend = () => setVoiceOverPlaying(false)
+    utterance.onerror = () => { setVoiceOverPlaying(false); setNotice('Voice-over tidak dapat diputar pada perangkat ini.') }
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(utterance)
+    setVoiceOverPlaying(true)
+    setNotice('Memutar voice-over bahasa Indonesia dari suara perangkat.')
+  }
+
   function updateScene<K extends keyof Scene>(key: K, value: Scene[K]) {
     if (!active) return
     const nextScenes = active.scenes.map((scene, i) => i === selected ? { ...scene, [key]: value } : scene)
@@ -74,10 +97,11 @@ export default function App() {
         <div className="page-heading"><div><div className="eyebrow"><Sparkles size={14}/> CREATIVE WORKSPACE</div><h1>Buat sesuatu yang <em>bergerak.</em></h1><p>Ubah ide menjadi storyboard motion graphics yang bisa kamu kembangkan.</p></div><button className="outline-btn" onClick={exportProject} disabled={!active}><Download size={16}/> Export project</button></div>
         <div className="creator-grid">
           <section className="panel prompt-panel"><div className="panel-heading"><div className="panel-icon purple"><WandSparkles size={18}/></div><div><h2>Deskripsikan videomu</h2><p>Mulai dari ide, cerita, atau proses yang ingin divisualisasikan.</p></div></div>
-            <label className="field-label" htmlFor="prompt">PROMPT / IDE VIDEO</label><textarea id="prompt" value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Contoh: proses terbentuknya Bumi dengan visual sinematik..."/>
+            <label className="field-label" htmlFor="prompt">NARASI UTAMA VIDEO</label><textarea id="prompt" value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Tempel atau tulis narasi lengkap di sini. Aplikasi akan membaginya menjadi adegan..."/>
             <div className="prompt-options"><label>FORMAT<select defaultValue="9:16"><option>9:16</option><option>16:9</option><option>1:1</option></select></label><label>DURASI<select defaultValue="26 detik"><option>15 detik</option><option>26 detik</option><option>30 detik</option><option>60 detik</option></select></label><label>GAYA<select defaultValue="Cinematic"><option>Cinematic</option><option>Documentary</option><option>Minimalist</option><option>Futuristic</option></select></label></div>
             <button className="primary-btn generate-btn" onClick={createProject} disabled={busy}><WandSparkles size={17}/>{busy ? 'Menyusun...' : 'Buat storyboard'}<span>↗</span></button>
-            <div className="hint"><Sparkles size={13}/> Draft storyboard dibuat secara lokal. AI eksternal belum dihubungkan.</div>
+            <button className="voiceover-btn" onClick={toggleVoiceOver} disabled={!active?.scenes.length}><Volume2 size={16}/>{voiceOverPlaying ? 'Hentikan voice-over' : 'Dengarkan voice-over'}</button>
+            <div className="hint"><Sparkles size={13}/> Narasi dibagi otomatis ke adegan. Voice-over memakai suara bahasa Indonesia dari perangkat; AI voice belum terhubung.</div>
           </section>
           <section className="panel preview-panel"><div className="panel-topline"><div><span className="live-indicator"/> MOTION RENDERER</div><span className="ratio-tag">PORTRAIT · 9:16</span></div>
             {scenes.length ? <MotionRenderer scenes={scenes} onStatus={setNotice}/> : <div className="renderer-empty"><Film size={28}/><b>Preview akan muncul setelah storyboard dibuat</b><span>Animasi dirender langsung di browser.</span></div>}
@@ -92,7 +116,7 @@ export default function App() {
         {current && <section className="panel editor-panel"><div className="section-title"><div><div className="eyebrow">SCENE EDITOR</div><h2>Edit adegan: {current.title}</h2></div><span className="edit-tag">SCENE 0{selected+1}</span></div><div className="editor-grid">{([{key:'visual',label:'Visual description'},{key:'narration',label:'Narasi'},{key:'camera',label:'Gerakan kamera'},{key:'lighting',label:'Pencahayaan'},{key:'subtitle',label:'Subtitle'},{key:'sfx',label:'Sound effect'}] as const).map(field => <label className="editor-field" key={field.key}><span>{field.label}</span><textarea value={current[field.key]} onChange={e => updateScene(field.key, e.target.value)} rows={2}/></label>)}<label className="editor-field duration-field"><span>Durasi (detik)</span><input type="number" min="1" max="120" value={current.duration} onChange={e => updateScene('duration', Math.max(1, Number(e.target.value)))}/></label></div></section>}
       </section>}
 
-      {page === 'chat' && <section className="simple-page"><div className="eyebrow"><Sparkles size={14}/> AI CREATIVE ASSISTANT</div><h1>Ruang ide & cerita.</h1><p>Susun prompt, narasi sinematik, konsep visual, dan arahan adegan.</p><div className="panel chat-panel"><div className="assistant-message"><div className="assistant-avatar"><Sparkles size={18}/></div><div><b>Motion Assistant</b><p>Halo! Ceritakan video yang ingin kamu buat. Aku bisa membantu menyusun konsep dan storyboard draft secara lokal.</p></div></div><textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Tulis ide atau minta dibuatkan narasi..."/><div className="chat-bottom"><span>Contoh: Buat narasi sinematik tentang luar angkasa.</span><button className="primary-btn" onClick={createProject}><Send size={16}/> Buat storyboard</button></div></div></section>}
+      {page === 'chat' && <section className="simple-page"><div className="eyebrow"><Sparkles size={14}/> AI CREATIVE ASSISTANT</div><h1>Ruang ide & cerita.</h1><p>Masukkan narasi saja. Aplikasi akan membaginya menjadi adegan, subtitle, dan arahan visual.</p><div className="panel chat-panel"><div className="assistant-message"><div className="assistant-avatar"><Sparkles size={18}/></div><div><b>Motion Assistant</b><p>Halo! Ceritakan video yang ingin kamu buat. Aku bisa membantu menyusun konsep dan storyboard draft secara lokal.</p></div></div><textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Tempel narasi lengkap yang ingin dijadikan video..."/><div className="chat-bottom"><span>Contoh: Buat narasi sinematik tentang luar angkasa.</span><button className="primary-btn" onClick={createProject}><Send size={16}/> Buat storyboard</button></div></div></section>}
 
       {page === 'projects' && <section className="simple-page"><div className="eyebrow">YOUR LIBRARY</div><h1>Project saya.</h1><p>Draft proyek tersimpan di browser perangkat ini.</p><div className="project-grid">{projects.map(project => <article className="panel project-card" key={project.id}><div className="project-cover"><Film size={28}/><span>{project.scenes.length} SCENES</span></div><h3>{project.title}</h3><small>Diubah {new Date(project.updatedAt).toLocaleString('id-ID')}</small><div className="project-actions"><button className="outline-btn" onClick={() => { setActive(project); setSelected(0); setPage('create') }}>Buka project</button><button className="icon-btn danger" onClick={() => removeProject(project.id)} aria-label="Hapus project"><Trash2 size={16}/></button></div></article>)}{!projects.length && <div className="empty-state"><FolderOpen size={28}/><b>Belum ada project</b><span>Storyboard yang kamu buat akan tersimpan di sini.</span></div>}</div></section>}
 
