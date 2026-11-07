@@ -74,18 +74,18 @@ function paint(ctx: CanvasRenderingContext2D, scene: Scene | undefined, sceneInd
 
   const fade = Math.min(1, progress * 5 + .1)
   ctx.globalAlpha = fade
-  ctx.fillStyle = '#d3baff'; ctx.font = '600 20px Arial'; ctx.letterSpacing = '5px'
+  ctx.fillStyle = '#d3baff'; ctx.font = '600 20px Arial';
   ctx.fillText('MOTION GRAPHICS  /  00' + (sceneIndex + 1), 64, 870)
-  ctx.fillStyle = '#ffffff'; ctx.font = '700 66px Arial'; ctx.letterSpacing = '-1px'
+  ctx.fillStyle = '#ffffff'; ctx.font = '700 66px Arial';
   drawWrapped(ctx, scene?.title || 'Your next story', 64, 960, 590, 78, 2)
-  ctx.fillStyle = '#d7d2e8'; ctx.font = '400 29px Arial'; ctx.letterSpacing = '0px'
+  ctx.fillStyle = '#d7d2e8'; ctx.font = '400 29px Arial';
   drawWrapped(ctx, scene?.subtitle || 'Ide besar dimulai di sini.', 64, 1110, 580, 42, 2)
   ctx.globalAlpha = 1
 
   const barY = 1200
   ctx.fillStyle = 'rgba(255,255,255,.2)'; roundedRect(ctx, 64, barY, 592, 5, 3); ctx.fill()
   ctx.fillStyle = '#c0a4ff'; roundedRect(ctx, 64, barY, 592 * Math.max(0, Math.min(1, progress)), 5, 3); ctx.fill()
-  ctx.fillStyle = 'rgba(255,255,255,.65)'; ctx.font = '500 17px Arial'; ctx.letterSpacing = '2px'
+  ctx.fillStyle = 'rgba(255,255,255,.65)'; ctx.font = '500 17px Arial';
   ctx.fillText('MG STUDIO', 64, 1240)
   ctx.textAlign = 'right'; ctx.fillText(String(Math.floor(seconds)).padStart(2, '0') + ' SEC', 656, 1240); ctx.textAlign = 'left'
 }
