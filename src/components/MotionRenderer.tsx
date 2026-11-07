@@ -93,12 +93,65 @@ function paint(ctx: CanvasRenderingContext2D, scene: Scene | undefined, sceneInd
 export default function MotionRenderer({ scenes, onStatus }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const audioDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null)
+  const lastSceneRef = useRef(-1)
   const chunksRef = useRef<Blob[]>([])
   const exportRef = useRef(false)
   const [playing, setPlaying] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const total = scenes.reduce((sum, scene) => sum + Math.max(1, scene.duration || 1), 0)
+
+  function prepareAudio() {
+    if (audioContextRef.current) { void audioContextRef.current.resume(); return }
+    const context = new AudioContext()
+    const master = context.createGain()
+    master.gain.value = 0.22
+    master.connect(context.destination)
+    const destination = context.createMediaStreamDestination()
+    master.connect(destination)
+    audioContextRef.current = context
+    audioDestinationRef.current = destination
+    void context.resume()
+  }
+
+  function playAutoSfx(sceneIndex: number) {
+    const context = audioContextRef.current
+    if (!context) return
+    const now = context.currentTime
+    const base = [110, 146.8, 196, 130.8, 82.4, 164.8, 220, 174.6][sceneIndex % 8]
+    const thump = context.createOscillator()
+    const thumpGain = context.createGain()
+    thump.type = 'sine'
+    thump.frequency.setValueAtTime(base * 1.8, now)
+    thump.frequency.exponentialRampToValueAtTime(Math.max(35, base * 0.55), now + 0.42)
+    thumpGain.gain.setValueAtTime(0.0001, now)
+    thumpGain.gain.exponentialRampToValueAtTime(0.48, now + 0.025)
+    thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58)
+    thump.connect(thumpGain)
+    thumpGain.connect(context.destination)
+    if (audioDestinationRef.current) thumpGain.connect(audioDestinationRef.current)
+    thump.start(now)
+    thump.stop(now + 0.6)
+
+    const sweep = context.createOscillator()
+    const sweepGain = context.createGain()
+    sweep.type = 'triangle'
+    sweep.frequency.setValueAtTime(base * 2.4, now)
+    sweep.frequency.exponentialRampToValueAtTime(base * 7, now + 0.32)
+    sweepGain.gain.setValueAtTime(0.0001, now)
+    sweepGain.gain.linearRampToValueAtTime(0.12, now + 0.12)
+    sweepGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7)
+    sweep.connect(sweepGain)
+    sweepGain.connect(context.destination)
+    if (audioDestinationRef.current) sweepGain.connect(audioDestinationRef.current)
+    sweep.start(now)
+    sweep.stop(now + 0.72)
+  }
+
+  useEffect(() => () => { void audioContextRef.current?.close() }, [])
+
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -132,6 +185,7 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
         cursor += scenes[index].duration
       }
       const scene = scenes[index]
+      if (lastSceneRef.current !== index) { lastSceneRef.current = index; playAutoSfx(index) }
       paint(ctx, scene, index, Math.min(1, (seconds - cursor) / Math.max(1, scene?.duration || 1)), seconds)
       setElapsed(seconds)
       if (seconds >= total) {
@@ -148,6 +202,8 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
 
   function play() {
     if (!scenes.length) return
+    prepareAudio()
+    if (elapsed >= total) lastSceneRef.current = -1
     if (elapsed >= total) setElapsed(0)
     setPlaying(true)
   }
@@ -159,12 +215,16 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
       onStatus('Browser ini belum mendukung ekspor WebM. Coba Chrome atau Edge terbaru.')
       return
     }
-    const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find(type => MediaRecorder.isTypeSupported(type))
+    const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find(type => MediaRecorder.isTypeSupported(type))
     if (!mime) { onStatus('Format WebM tidak didukung browser ini.'); return }
     try {
       if (recorderRef.current?.state === 'recording') recorderRef.current.stop()
       chunksRef.current = []
-      const stream = canvas.captureStream(30)
+      prepareAudio()
+      lastSceneRef.current = -1
+      const videoStream = canvas.captureStream(30)
+      const audioTracks = audioDestinationRef.current?.stream.getAudioTracks() || []
+      const stream = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks])
       const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5_000_000 })
       recorderRef.current = recorder
       exportRef.current = true
@@ -175,7 +235,7 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
         const link = document.createElement('a')
         link.href = url; link.download = 'motion-graphics-export.webm'; link.click()
         URL.revokeObjectURL(url)
-        stream.getTracks().forEach(track => track.stop())
+        videoStream.getTracks().forEach(track => track.stop())
         setExporting(false); exportRef.current = false
         onStatus('Ekspor WebM selesai. Video tersimpan ke perangkat.')
       }
@@ -197,6 +257,6 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
       <div className="renderer-progress"><div><span>{Math.floor(elapsed)}s</span><span>{total}s</span></div><div className="renderer-progress-track"><i style={{ width: percent + '%' }}/></div></div>
       <button className="renderer-export" onClick={exportVideo} disabled={!scenes.length || exporting}><Download size={15}/>{exporting ? 'Merekam…' : 'Export WebM'}</button>
     </div>
-    <p className="renderer-note"><Video size={13}/> Canvas 720 × 1280 · 30 FPS · WebM</p>
+    <p className="renderer-note"><Video size={13}/> Canvas 720 × 1280 · 30 FPS · WebM <span><Volume2 size={12}/> SFX prosedural ikut terekam</span></p>
   </div>
 }
