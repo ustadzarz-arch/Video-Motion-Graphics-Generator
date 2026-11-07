@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Clapperboard, MessageSquare, FolderOpen, Settings, Plus, Send, WandSparkles, Film, Upload, Download, Play, Clock3, ChevronRight, Trash2, Sparkles, PanelLeftClose, Menu } from 'lucide-react'
+import { Clapperboard, MessageSquare, FolderOpen, Settings, Plus, Send, WandSparkles, Film, Download, Clock3, ChevronRight, Trash2, Sparkles, PanelLeftClose, Menu } from 'lucide-react'
 import { makeStoryboard, type Scene } from './lib/storyboard'
 import { loadProjects, saveProjects, type Project } from './lib/storage'
+import MotionRenderer from './components/MotionRenderer'
 
 type Page = 'chat' | 'create' | 'projects' | 'settings'
 const starter = 'Buat motion graphics sinematik tentang proses terbentuknya Bumi, dari awan debu kosmik hingga planet biru.'
@@ -77,9 +78,9 @@ export default function App() {
             <button className="primary-btn generate-btn" onClick={createProject} disabled={busy}><WandSparkles size={17}/>{busy ? 'Menyusun...' : 'Buat storyboard'}<span>↗</span></button>
             <div className="hint"><Sparkles size={13}/> Draft storyboard dibuat secara lokal. AI eksternal belum dihubungkan.</div>
           </section>
-          <section className="panel preview-panel"><div className="panel-topline"><div><span className="live-indicator"/> PREVIEW CANVAS</div><span className="ratio-tag">PORTRAIT · 9:16</span></div>
-            <div className="preview-stage"><div className="preview-frame"><div className="stars"/><div className="planet planet-one"/><div className="planet planet-two"/><div className="preview-copy"><small>MOTION GRAPHICS / 001</small><strong>{current?.title || 'Your next story'}</strong><span>{current?.subtitle || 'Ide besar dimulai di sini.'}</span></div><div className="preview-footer"><span>MG STUDIO</span><span>00:{String(current?.duration || 0).padStart(2,'0')}</span></div></div><button className="play-button" onClick={() => setNotice('Preview visual masih berupa canvas contoh; renderer video belum terpasang.')}><Play size={18} fill="currentColor"/></button></div>
-            <div className="preview-caption"><span><Film size={14}/> Live composition preview</span><span>{scenes.length || 0} scenes</span></div>
+          <section className="panel preview-panel"><div className="panel-topline"><div><span className="live-indicator"/> MOTION RENDERER</div><span className="ratio-tag">PORTRAIT · 9:16</span></div>
+            {scenes.length ? <MotionRenderer scenes={scenes} onStatus={setNotice}/> : <div className="renderer-empty"><Film size={28}/><b>Preview akan muncul setelah storyboard dibuat</b><span>Animasi dirender langsung di browser.</span></div>}
+            <div className="preview-caption"><span><Film size={14}/> Procedural canvas preview</span><span>{scenes.length || 0} scenes</span></div>
           </section>
         </div>
 
@@ -94,7 +95,7 @@ export default function App() {
 
       {page === 'projects' && <section className="simple-page"><div className="eyebrow">YOUR LIBRARY</div><h1>Project saya.</h1><p>Draft proyek tersimpan di browser perangkat ini.</p><div className="project-grid">{projects.map(project => <article className="panel project-card" key={project.id}><div className="project-cover"><Film size={28}/><span>{project.scenes.length} SCENES</span></div><h3>{project.title}</h3><small>Diubah {new Date(project.updatedAt).toLocaleString('id-ID')}</small><div className="project-actions"><button className="outline-btn" onClick={() => { setActive(project); setSelected(0); setPage('create') }}>Buka project</button><button className="icon-btn danger" onClick={() => removeProject(project.id)} aria-label="Hapus project"><Trash2 size={16}/></button></div></article>)}{!projects.length && <div className="empty-state"><FolderOpen size={28}/><b>Belum ada project</b><span>Storyboard yang kamu buat akan tersimpan di sini.</span></div>}</div></section>}
 
-      {page === 'settings' && <section className="simple-page"><div className="eyebrow">PREFERENCES</div><h1>Pengaturan.</h1><p>Pengaturan workspace dan status integrasi.</p><div className="panel settings-card"><div><b>Mode penyimpanan</b><span>Local browser storage</span></div><div><b>AI provider</b><span>Belum terhubung — tidak ada API key yang disimpan di aplikasi.</span></div><div><b>Video renderer</b><span>Belum tersedia. Export MP4 akan ditambahkan setelah engine render terintegrasi.</span></div><div><b>Versi aplikasi</b><span>0.1.0 · Foundation preview</span></div></div></section>}
+      {page === 'settings' && <section className="simple-page"><div className="eyebrow">PREFERENCES</div><h1>Pengaturan.</h1><p>Pengaturan workspace dan status integrasi.</p><div className="panel settings-card"><div><b>Mode penyimpanan</b><span>Local browser storage</span></div><div><b>AI provider</b><span>Belum terhubung — tidak ada API key yang disimpan di aplikasi.</span></div><div><b>Video renderer</b><span>Canvas renderer tersedia untuk preview animasi dan ekspor WebM. MP4 belum tersedia.</span></div><div><b>Versi aplikasi</b><span>0.2.0 · Canvas renderer</span></div></div></section>}
       <footer className="app-footer"><span>© 2026 Motion Graphics Generator</span><span>{notice}</span></footer>
     </main>
     {mobileMenu && <button className="scrim" onClick={() => setMobileMenu(false)} aria-label="Tutup menu"/>}
