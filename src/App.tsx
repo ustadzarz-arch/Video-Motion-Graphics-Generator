@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Clapperboard, MessageSquare, FolderOpen, Settings, Plus, Send, WandSparkles, Film, Download, Clock3, ChevronRight, Trash2, Sparkles, PanelLeftClose, Menu } from 'lucide-react'
+import { Clapperboard, MessageSquare, FolderOpen, Settings, Plus, Send, WandSparkles, Film, Download, Clock3, ChevronRight, Trash2, Sparkles, PanelLeftClose, Menu, Smartphone, Monitor, Apple, Terminal, Globe } from 'lucide-react'
 import { makeStoryboard, type Scene } from './lib/storyboard'
 import { loadProjects, saveProjects, type Project } from './lib/storage'
 import MotionRenderer from './components/MotionRenderer'
 
-type Page = 'chat' | 'create' | 'projects' | 'settings'
+type Page = 'chat' | 'create' | 'projects' | 'downloads' | 'settings'
 const starter = 'Buat motion graphics sinematik tentang proses terbentuknya Bumi, dari awan debu kosmik hingga planet biru.'
 
 export default function App() {
@@ -54,6 +54,7 @@ export default function App() {
     { id: 'chat' as Page, label: 'Chat AI', icon: MessageSquare },
     { id: 'create' as Page, label: 'Buat Video', icon: Clapperboard },
     { id: 'projects' as Page, label: 'Project Saya', icon: FolderOpen },
+    { id: 'downloads' as Page, label: 'Download App', icon: Download },
     { id: 'settings' as Page, label: 'Settings', icon: Settings }
   ]
 
@@ -95,6 +96,17 @@ export default function App() {
 
       {page === 'projects' && <section className="simple-page"><div className="eyebrow">YOUR LIBRARY</div><h1>Project saya.</h1><p>Draft proyek tersimpan di browser perangkat ini.</p><div className="project-grid">{projects.map(project => <article className="panel project-card" key={project.id}><div className="project-cover"><Film size={28}/><span>{project.scenes.length} SCENES</span></div><h3>{project.title}</h3><small>Diubah {new Date(project.updatedAt).toLocaleString('id-ID')}</small><div className="project-actions"><button className="outline-btn" onClick={() => { setActive(project); setSelected(0); setPage('create') }}>Buka project</button><button className="icon-btn danger" onClick={() => removeProject(project.id)} aria-label="Hapus project"><Trash2 size={16}/></button></div></article>)}{!projects.length && <div className="empty-state"><FolderOpen size={28}/><b>Belum ada project</b><span>Storyboard yang kamu buat akan tersimpan di sini.</span></div>}</div></section>}
 
+      {page === 'downloads' && <section className="simple-page downloads-page"><div className="eyebrow"><Download size={14}/> DOWNLOAD CENTER</div><h1>Motion Graphics <em>di semua perangkat.</em></h1><p>Satu aplikasi untuk web, ponsel, dan komputer. Installer native akan tersedia setelah proses build dan pengujian setiap platform selesai.</p>
+        <div className="download-grid">
+          <article className="panel download-card"><div className="download-icon"><Globe size={25}/></div><div className="download-card-head"><h3>Web App</h3><span className="release-status ready">Bisa dibuka</span></div><p>Gunakan langsung melalui browser. Pada browser yang mendukung, pilih menu “Install app” atau “Add to Home Screen”.</p><a className="download-link" href="https://ustadzarz-arch.github.io/Video-Motion-Graphics-Generator/" target="_blank" rel="noreferrer">Buka Web App <ChevronRight size={15}/></a></article>
+          <article className="panel download-card"><div className="download-icon"><Smartphone size={25}/></div><div className="download-card-head"><h3>Android</h3><span className="release-status pending">APK disiapkan</span></div><p>Versi installer .apk dan paket Play Store sedang disiapkan melalui build Android.</p><span className="download-disabled">APK belum tersedia</span></article>
+          <article className="panel download-card"><div className="download-icon"><Monitor size={25}/></div><div className="download-card-head"><h3>Windows</h3><span className="release-status pending">EXE disiapkan</span></div><p>Installer desktop Windows (.exe) akan diterbitkan setelah build dan pengujian.</p><span className="download-disabled">EXE belum tersedia</span></article>
+          <article className="panel download-card"><div className="download-icon"><Terminal size={25}/></div><div className="download-card-head"><h3>Linux</h3><span className="release-status pending">Build disiapkan</span></div><p>Paket Linux seperti AppImage atau .deb akan disediakan setelah pengujian kompatibilitas.</p><span className="download-disabled">Paket belum tersedia</span></article>
+          <article className="panel download-card"><div className="download-icon"><Apple size={25}/></div><div className="download-card-head"><h3>iOS & iPadOS</h3><span className="release-status pending">Distribusi disiapkan</span></div><p>Versi iPhone/iPad memerlukan build Xcode, penandatanganan Apple, dan distribusi TestFlight atau App Store.</p><span className="download-disabled">Belum tersedia</span></article>
+        </div>
+        <div className="panel release-note"><b>Catatan rilis</b><p>File installer akan ditautkan di halaman ini setelah benar-benar berhasil dibuat dan diuji. Kami tidak menampilkan tombol unduhan palsu.</p><a href="https://github.com/ustadzarz-arch/Video-Motion-Graphics-Generator/releases" target="_blank" rel="noreferrer">Lihat halaman GitHub Releases <ChevronRight size={14}/></a></div>
+      </section>}
+      
       {page === 'settings' && <section className="simple-page"><div className="eyebrow">PREFERENCES</div><h1>Pengaturan.</h1><p>Pengaturan workspace dan status integrasi.</p><div className="panel settings-card"><div><b>Mode penyimpanan</b><span>Local browser storage</span></div><div><b>AI provider</b><span>Belum terhubung — tidak ada API key yang disimpan di aplikasi.</span></div><div><b>Video renderer</b><span>Canvas renderer tersedia untuk preview animasi dan ekspor WebM. MP4 belum tersedia.</span></div><div><b>Versi aplikasi</b><span>0.2.0 · Canvas renderer</span></div></div></section>}
       <footer className="app-footer"><span>© 2026 Motion Graphics Generator</span><span>{notice}</span></footer>
     </main>
