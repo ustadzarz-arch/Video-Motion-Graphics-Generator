@@ -95,6 +95,7 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
   const recorderRef = useRef<MediaRecorder | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const audioDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null)
+  const speechRef = useRef<SpeechSynthesisUtterance | null>(null)
   const lastSceneRef = useRef(-1)
   const chunksRef = useRef<Blob[]>([])
   const exportRef = useRef(false)
@@ -107,7 +108,7 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
     if (audioContextRef.current) { void audioContextRef.current.resume(); return }
     const context = new AudioContext()
     const master = context.createGain()
-    master.gain.value = 0.22
+    master.gain.value = 0.55
     master.connect(context.destination)
     const destination = context.createMediaStreamDestination()
     master.connect(destination)
@@ -150,7 +151,32 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
     sweep.stop(now + 0.72)
   }
 
-  useEffect(() => () => { void audioContextRef.current?.close() }, [])
+  function speakNarration() {
+    if (!('speechSynthesis' in window)) {
+      onStatus('Voice-over perangkat tidak didukung browser ini. Efek suara tetap tersedia.')
+      return
+    }
+    const script = scenes.map(scene => scene.narration).filter(Boolean).join(' ').trim()
+    if (!script) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(script)
+    utterance.lang = 'id-ID'
+    utterance.rate = 0.95
+    utterance.pitch = 1
+    utterance.onerror = () => onStatus('Suara bahasa Indonesia belum tersedia atau diblokir di perangkat ini.')
+    speechRef.current = utterance
+    window.speechSynthesis.speak(utterance)
+  }
+
+  function stopNarration() {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+    speechRef.current = null
+  }
+
+  useEffect(() => () => {
+    stopNarration()
+    void audioContextRef.current?.close()
+  }, [])
 
 
   useEffect(() => {
@@ -190,6 +216,7 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
       setElapsed(seconds)
       if (seconds >= total) {
         setElapsed(total); setPlaying(false)
+        stopNarration()
         if (exportRef.current && recorderRef.current?.state === 'recording') recorderRef.current.stop()
         return
       }
@@ -205,6 +232,7 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
     prepareAudio()
     if (elapsed >= total) lastSceneRef.current = -1
     if (elapsed >= total) setElapsed(0)
+    speakNarration()
     setPlaying(true)
   }
 
@@ -253,7 +281,7 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
   return <div className="motion-renderer">
     <div className="renderer-canvas-wrap"><canvas ref={canvasRef} width={W} height={H} aria-label="Preview motion graphics portrait"/></div>
     <div className="renderer-controls">
-      <button className="renderer-play" onClick={() => playing ? setPlaying(false) : play()} disabled={!scenes.length}>{playing ? <Pause size={15}/> : <Play size={15} fill="currentColor"/>}{playing ? 'Pause' : 'Preview'}</button>
+      <button className="renderer-play" onClick={() => { if (playing) { setPlaying(false); stopNarration() } else play() }} disabled={!scenes.length}>{playing ? <Pause size={15}/> : <Play size={15} fill="currentColor"/>}{playing ? 'Pause' : 'Preview + Voice-over'}</button>
       <div className="renderer-progress"><div><span>{Math.floor(elapsed)}s</span><span>{total}s</span></div><div className="renderer-progress-track"><i style={{ width: percent + '%' }}/></div></div>
       <button className="renderer-export" onClick={exportVideo} disabled={!scenes.length || exporting}><Download size={15}/>{exporting ? 'Merekam…' : 'Export WebM'}</button>
     </div>
