@@ -103,44 +103,17 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
   useEffect(() => {
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
-    if (!canvas || !ctx) return
-    if (!playing || scenes.length === 0) {
-      const time = Math.min(elapsed, Math.max(0, total - .001))
-      let cursor = 0
-      let index = 0
-      for (; index < scenes.length - 1; index++) {
-        if (time < cursor + scenes[index].duration) break
-        cursor += scenes[index].duration
-      }
-      const scene = scenes[index]
-      const duration = scene?.duration || 1
-      paint(ctx, scene, index, (time - cursor) / duration, time)
-      return
+    if (!canvas || !ctx || playing || scenes.length === 0) return
+    let cursor = 0
+    let index = 0
+    const time = Math.min(elapsed, Math.max(0, total - .001))
+    for (; index < scenes.length - 1; index++) {
+      if (time < cursor + scenes[index].duration) break
+      cursor += scenes[index].duration
     }
-
-    let frame = 0
-    let start = performance.now() - elapsed * 1000
-    const tick = (now: number) => {
-      const seconds = Math.min(total, (now - start) / 1000)
-      let cursor = 0
-      let index = 0
-      for (; index < scenes.length - 1; index++) {
-        if (seconds < cursor + scenes[index].duration) break
-        cursor += scenes[index].duration
-      }
-      const scene = scenes[index]
-      paint(ctx, scene, index, Math.min(1, (seconds - cursor) / Math.max(1, scene?.duration || 1)), seconds)
-      setElapsed(seconds)
-      if (seconds >= total) {
-        setPlaying(false)
-        if (exportRef.current && recorderRef.current?.state === 'recording') recorderRef.current.stop()
-        return
-      }
-      frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [playing, scenes, total, elapsed])
+    const scene = scenes[index]
+    paint(ctx, scene, index, (time - cursor) / Math.max(1, scene?.duration || 1), time)
+  }, [scenes, elapsed, playing, total])
 
   // Keep the animation clock independent from React renders while playback is active.
   useEffect(() => {
@@ -160,6 +133,7 @@ export default function MotionRenderer({ scenes, onStatus }: Props) {
       }
       const scene = scenes[index]
       paint(ctx, scene, index, Math.min(1, (seconds - cursor) / Math.max(1, scene?.duration || 1)), seconds)
+      setElapsed(seconds)
       if (seconds >= total) {
         setElapsed(total); setPlaying(false)
         if (exportRef.current && recorderRef.current?.state === 'recording') recorderRef.current.stop()
