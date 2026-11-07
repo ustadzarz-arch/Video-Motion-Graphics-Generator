@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Download, Pause, Play, Video } from 'lucide-react'
+import { Download, Pause, Play, Video, Volume2 } from 'lucide-react'
 import type { Scene } from '../lib/storyboard'
 
 type Props = { scenes: Scene[]; onStatus: (message: string) => void }
