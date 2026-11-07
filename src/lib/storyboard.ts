@@ -112,3 +112,18 @@ export function makeStoryboard(prompt: string): Scene[] {
     )
   ]
 }
+
+
+/** Build scene narration directly from the script supplied by the user. */
+export function makeStoryboardFromNarration(narration: string): Scene[] {
+  const script = narration.trim()
+  const scenes = makeStoryboard(script)
+  if (!script) return scenes
+  const words = script.split(/\s+/)
+  const chunkSize = Math.ceil(words.length / scenes.length)
+  return scenes.map((item, index) => {
+    const part = words.slice(index * chunkSize, (index + 1) * chunkSize).join(' ')
+    if (!part) return item
+    return { ...item, narration: part, subtitle: part.split(/\s+/).slice(0, 9).join(' ') }
+  })
+}
